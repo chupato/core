@@ -261,6 +261,24 @@ bool DBUpdater<T>::Update(DatabaseWorkerPool<T>& pool, std::string_view modulesL
     if (!CheckUpdateTable("updates") || !CheckUpdateTable("updates_include"))
         return false;
 
+    // Custom check for acore_auth.web_events table existence
+    if constexpr (std::is_same_v<T, LoginDatabaseConnection>)
+    {
+        // The `acore_auth` database is explicitly specified in the table name `acore_auth.web_events`.
+        // The `pool.GetConnectionInfo()->database` should match `acore_auth` for LoginDatabaseConnection.
+        // The query `SHOW TABLES FROM \`acore_auth\` LIKE 'web_events'` is robust.
+        QueryResult webEventsTableExists = DBUpdater<LoginDatabaseConnection>::Retrieve(pool, "SHOW TABLES FROM `acore_auth` LIKE 'web_events'");
+        if (!webEventsTableExists || webEventsTableExists->GetRowCount() == 0)
+        {
+            std::string dbName = pool.GetConnectionInfo() ? pool.GetConnectionInfo()->database : "acore_auth"; // Default to acore_auth if info is somehow null
+            LOG_FATAL("sql.updates", "Critical table 'acore_auth'.'web_events' is missing in database '%s'. "
+                                     "This table is required for web event processing. "
+                                     "Please ensure it is created via appropriate SQL update scripts before starting the server.",
+                                     dbName.c_str());
+            return false; // Stop the server startup
+        }
+    }
+
     UpdateFetcher updateFetcher(sourceDirectory, [&](std::string const & query) { DBUpdater<T>::Apply(pool, query); },
     [&](Path const & file) { DBUpdater<T>::ApplyFile(pool, file); },
     [&](std::string const & query) -> QueryResult { return DBUpdater<T>::Retrieve(pool, query); }, DBUpdater<T>::GetDBModuleName(), modulesList);
