@@ -5367,6 +5367,10 @@ void Player::SetSkill(uint16 id, uint16 step, uint16 newVal, uint16 maxVal)
         }
         else                                                //remove
         {
+            // prevent to remove gathering skills
+            if (id == SKILL_HERBALISM || id == SKILL_MINING || id == SKILL_SKINNING)
+              return;
+
             //remove enchantments needing this skill
             UpdateSkillEnchantments(id, currVal, 0);
             // clear skill fields
