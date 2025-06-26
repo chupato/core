@@ -151,10 +151,23 @@ void WorldSession::HandleUseItemOpcode(WorldPacket& recvPacket)
     }
 
     // only allow conjured consumable, bandage, poisons (all should have the 2^21 item flag set in DB)
-    if (proto->Class == ITEM_CLASS_CONSUMABLE && !proto->HasFlag(ITEM_FLAG_IGNORE_DEFAULT_ARENA_RESTRICTIONS) && pUser->InArena())
+    if (proto->Class == ITEM_CLASS_CONSUMABLE && !proto->HasFlag(ITEM_FLAG_IGNORE_DEFAULT_ARENA_RESTRICTIONS))
     {
-        pUser->SendEquipError(EQUIP_ERR_NOT_DURING_ARENA_MATCH, pItem, nullptr);
-        return;
+    	if (pUser->InArena())
+    	{
+    	    pUser->SendEquipError(EQUIP_ERR_NOT_DURING_ARENA_MATCH, pItem, nullptr);
+    	    return;
+    	}
+    
+    	if (pUser->InBattleground())
+    	{
+    	    ItemTemplate const* proto = pItem->GetTemplate();
+    	    if (!(proto && (proto->Map == pUser->GetMapId() || proto->Area == pUser->GetZoneId())))
+    	    {
+    	        pUser->SendEquipError(EQUIP_ERR_CANT_DO_RIGHT_NOW, pItem, nullptr);
+    	        return;
+    	    }
+    	}
     }
 
     // don't allow items banned in arena

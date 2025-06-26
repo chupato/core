@@ -1537,6 +1537,19 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
 
             CombatStop();
 
+            // remove arena spell coldowns/buffs now to also remove pet's cooldowns before it's temporarily unsummoned
+            if (mEntry->IsBattlegroundOrArena() && (HasPendingSpectatorForBG(0) || !HasPendingSpectatorForBG(GetBattlegroundId())))
+            {
+                // KEEP THIS ORDER!
+                RemoveArenaAuras();
+                if (pet)
+                    pet->RemoveArenaAuras();
+
+                Battleground* bg = GetBattleground();
+                if (bg && bg->GetStatus() == STATUS_WAIT_JOIN)
+                	RemoveArenaSpellCooldowns(true);
+            }
+
             // remove pet on map change
             if (pet)
                 UnsummonPetTemporaryIfAny();
