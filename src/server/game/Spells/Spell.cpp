@@ -6259,7 +6259,7 @@ SpellCastResult Spell::CheckCast(bool strict, uint32* /*param1*/, uint32* /*para
                     Creature* creature = m_targets.GetUnitTarget()->ToCreature();
                     if (!creature->IsCritter() && !creature->loot.isLooted())
                         return SPELL_FAILED_TARGET_NOT_LOOTED;
-
+                    /*
                     uint32 skill = creature->GetCreatureTemplate()->GetRequiredLootSkill();
 
                     int32 skillValue = m_caster->ToPlayer()->GetSkillValue(skill);
@@ -6267,7 +6267,7 @@ SpellCastResult Spell::CheckCast(bool strict, uint32* /*param1*/, uint32* /*para
                     int32 ReqValue = (skillValue < 100 ? (TargetLevel - 10) * 10 : TargetLevel * 5);
                     if (ReqValue > skillValue)
                         return SPELL_FAILED_LOW_CASTLEVEL;
-
+					*/
                     break;
                 }
             case SPELL_EFFECT_OPEN_LOCK:
