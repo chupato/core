@@ -107,6 +107,7 @@ int kb_hit_return()
 /// %Thread start
 void CliThread()
 {
+    LOG_INFO("shutdown.debug", "CliRunnable: CliThread started.");
 #if AC_PLATFORM == AC_PLATFORM_WINDOWS
     // print this here the first time
     // later it will be printed after command queue updates
@@ -190,4 +191,7 @@ void CliThread()
             World::StopNow(SHUTDOWN_EXIT_CODE);
         }
     }
+    LOG_INFO("shutdown.debug", "CliRunnable: CliThread exiting loop.");
+    LOG_INFO("shutdown.debug", "CliRunnable: CliThread finished.");
 }
+

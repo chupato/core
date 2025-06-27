@@ -25,6 +25,7 @@
 #include "DatabaseEnvFwd.h"
 #include "IWorld.h"
 #include "LockedQueue.h"
+#include "Log.h"
 #include "ObjectGuid.h"
 #include "SharedDefines.h"
 #include "Timer.h"
@@ -192,7 +193,10 @@ public:
     void ShutdownCancel() override;
     void ShutdownMsg(bool show = false, Player* player = nullptr, std::string const& reason = std::string()) override;
     static uint8 GetExitCode() { return _exitCode; }
-    static void StopNow(uint8 exitcode) { _stopEvent = true; _exitCode = exitcode; }
+    static void StopNow(uint8 exitcode) {
+        LOG_INFO("shutdown.debug", "World: StopNow called with exit code {}.");
+        _stopEvent = true; _exitCode = exitcode;
+    }
     static bool IsStopped() { return _stopEvent; }
 
     void Update(uint32 diff) override;
