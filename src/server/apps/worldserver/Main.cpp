@@ -336,6 +336,13 @@ int main(int argc, char** argv)
         });
     }
 
+    // New shared_ptr to manage soapThread's lifetime and ensure it's joined before sWorldSocketMgrHandle
+    std::shared_ptr<void> soapThreadHandle(nullptr, [&](void*)
+    {
+        if (soapThread)
+            soapThread.reset();
+    });
+
     // Launch the worldserver listener socket
     uint16 worldPort = uint16(sWorld->getIntConfig(CONFIG_PORT_WORLD));
     std::string worldListener = sConfigMgr->GetOption<std::string>("BindIP", "0.0.0.0");
