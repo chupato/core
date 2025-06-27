@@ -119,6 +119,7 @@ variables_map GetConsoleArguments(int argc, char** argv, fs::path& configFile, [
 /// Launch the Azeroth server
 int main(int argc, char** argv)
 {
+    LOG_INFO("shutdown.debug", "Main: Entering main function.");
     Acore::Impl::CurrentServerProcessHolder::_type = SERVER_PROCESS_WORLDSERVER;
     signal(SIGABRT, &Acore::AbortHandler);
 
@@ -205,7 +206,11 @@ int main(int argc, char** argv)
 
     OpenSSLCrypto::threadsSetup();
 
-    std::shared_ptr<void> opensslHandle(nullptr, [](void*) { OpenSSLCrypto::threadsCleanup(); });
+    std::shared_ptr<void> opensslHandle(nullptr, [](void*) {
+        LOG_INFO("shutdown.debug", "Main: opensslHandle deleter called.");
+        OpenSSLCrypto::threadsCleanup();
+        LOG_INFO("shutdown.debug", "Main: opensslHandle deleter finished.");
+    });
 
     // Seed the OpenSSL's PRNG here.
     // That way it won't auto-seed when calling BigNumber::SetRand and slow down the first world login
@@ -236,11 +241,13 @@ int main(int argc, char** argv)
     int numThreads = sConfigMgr->GetOption<int32>("ThreadPool", 2);
     std::shared_ptr<std::vector<std::thread>> threadPool(new std::vector<std::thread>(), [ioContext](std::vector<std::thread>* del)
     {
+        LOG_INFO("shutdown.debug", "Main: threadPool deleter called.");
         ioContext->stop();
         for (std::thread& thr : *del)
             thr.join();
 
         delete del;
+        LOG_INFO("shutdown.debug", "Main: threadPool deleter finished.");
     });
 
     if (numThreads < 1)
@@ -267,8 +274,10 @@ int main(int argc, char** argv)
 
     std::shared_ptr<void> sScriptMgrHandle(nullptr, [](void*)
     {
+        LOG_INFO("shutdown.debug", "Main: sScriptMgrHandle deleter called.");
         sScriptMgr->Unload();
         //sScriptReloadMgr->Unload();
+        LOG_INFO("shutdown.debug", "Main: sScriptMgrHandle deleter finished.");
     });
 
     LOG_INFO("server.loading", "Initializing Scripts...");
@@ -278,7 +287,11 @@ int main(int argc, char** argv)
     if (!StartDB())
         return 1;
 
-    std::shared_ptr<void> dbHandle(nullptr, [](void*) { StopDB(); });
+    std::shared_ptr<void> dbHandle(nullptr, [](void*) {
+        LOG_INFO("shutdown.debug", "Main: dbHandle deleter called.");
+        StopDB();
+        LOG_INFO("shutdown.debug", "Main: dbHandle deleter finished.");
+    });
 
     // set server offline (not connectable)
     LoginDatabase.DirectExecute("UPDATE realmlist SET flag = (flag & ~{}) | {} WHERE id = '{}'", REALM_FLAG_OFFLINE, REALM_FLAG_VERSION_MISMATCH, realm.Id.Realm);
@@ -297,8 +310,10 @@ int main(int argc, char** argv)
 
     std::shared_ptr<void> sMetricHandle(nullptr, [](void*)
     {
+        LOG_INFO("shutdown.debug", "Main: sMetricHandle deleter called.");
         METRIC_EVENT("events", "Worldserver shutdown", "");
         sMetric->Unload();
+        LOG_INFO("shutdown.debug", "Main: sMetricHandle deleter finished.");
     });
 
     Acore::Module::SetEnableModulesList(AC_MODULES_LIST);
@@ -309,6 +324,7 @@ int main(int argc, char** argv)
 
     std::shared_ptr<void> mapManagementHandle(nullptr, [](void*)
     {
+        LOG_INFO("shutdown.debug", "Main: mapManagementHandle deleter called.");
         // unload battleground templates before different singletons destroyed
         sBattlegroundMgr->DeleteAllBattlegrounds();
 
@@ -316,6 +332,7 @@ int main(int argc, char** argv)
         sMapMgr->UnloadAll();                      // unload all grids (including locked in memory)
 
         sScriptMgr->OnAfterUnloadAllMaps();
+        LOG_INFO("shutdown.debug", "Main: mapManagementHandle deleter finished.");
     });
 
     // Start the Remote Access port (acceptor) if enabled
@@ -340,8 +357,10 @@ int main(int argc, char** argv)
     // New shared_ptr to manage soapThread's lifetime and ensure it's joined before sWorldSocketMgrHandle
     std::shared_ptr<void> soapThreadHandle(nullptr, [&](void*)
     {
+        LOG_INFO("shutdown.debug", "Main: soapThreadHandle deleter called.");
         if (soapThread)
             soapThread.reset();
+        LOG_INFO("shutdown.debug", "Main: soapThreadHandle deleter finished.");
     });
 
     // Launch the worldserver listener socket
@@ -366,6 +385,7 @@ int main(int argc, char** argv)
 
     std::shared_ptr<void> sWorldSocketMgrHandle(nullptr, [](void*)
     {
+        LOG_INFO("shutdown.debug", "Main: sWorldSocketMgrHandle deleter called.");
         sWorldSessionMgr->KickAll();         // save and kick all players
         sWorldSessionMgr->UpdateSessions(1); // real players unload required UpdateSessions call
 
@@ -373,6 +393,7 @@ int main(int argc, char** argv)
 
         ///- Clean database before leaving
         ClearOnlineAccounts();
+        LOG_INFO("shutdown.debug", "Main: sWorldSocketMgrHandle deleter finished.");
     });
 
     // Set server online (allow connecting now)
@@ -406,12 +427,18 @@ int main(int argc, char** argv)
 
     WorldUpdateLoop();
 
+    LOG_INFO("shutdown.debug", "Main: WorldUpdateLoop finished.");
+
     // Shutdown starts here
     threadPool.reset();
 
+    LOG_INFO("shutdown.debug", "Main: threadPool reset.");
+
     sLog->SetSynchronous();
+    LOG_INFO("shutdown.debug", "Main: sLog set synchronous.");
 
     sScriptMgr->OnShutdown();
+    LOG_INFO("shutdown.debug", "Main: sScriptMgr OnShutdown called.");
 
     // set server offline
     if (!sConfigMgr->GetOption<bool>("Network.UseSocketActivation", false))
@@ -423,7 +450,9 @@ int main(int argc, char** argv)
     // 1 - shutdown at error
     // 2 - restart command used, this code can be used by restarter for restart AzerothCore
 
-    return World::GetExitCode();
+    int exitCode = World::GetExitCode();
+    LOG_INFO("shutdown.debug", "Main: Exiting main function with code {}.");
+    return exitCode;
 }
 
 /// Initialize connection to the databases

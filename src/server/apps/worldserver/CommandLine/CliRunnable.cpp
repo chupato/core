@@ -110,6 +110,7 @@ int kb_hit_return()
 /// %Thread start
 void CliThread()
 {
+    LOG_INFO("shutdown.debug", "CliRunnable: CliThread started.");
 #if AC_PLATFORM == AC_PLATFORM_WINDOWS
     // Set console code pages to UTF-8
     SetConsoleCP(CP_UTF8);
@@ -238,4 +239,7 @@ void CliThread()
             World::StopNow(SHUTDOWN_EXIT_CODE);
         }
     }
+    LOG_INFO("shutdown.debug", "CliRunnable: CliThread exiting loop.");
+    LOG_INFO("shutdown.debug", "CliRunnable: CliThread finished.");
 }
+

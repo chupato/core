@@ -73,6 +73,7 @@ public:
 
     virtual void StopNetwork()
     {
+        LOG_INFO("shutdown.debug", "SocketMgr: StopNetwork called.");
         _acceptor->Close();
 
         for (int32 i = 0; i < _threadCount; ++i)
@@ -83,6 +84,7 @@ public:
         _acceptor.reset();
         _threads.reset();
         _threadCount = 0;
+        LOG_INFO("shutdown.debug", "SocketMgr: StopNetwork finished.");
     }
 
     void Wait()

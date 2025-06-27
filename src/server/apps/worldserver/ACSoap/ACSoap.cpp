@@ -23,6 +23,7 @@
 
 void ACSoapThread(const std::string& host, uint16 port)
 {
+    LOG_INFO("shutdown.debug", "ACSoap: ACSoapThread started.");
     struct soap soap;
     soap_init(&soap);
     soap_set_imode(&soap, SOAP_C_UTFSTRING);
@@ -39,6 +40,7 @@ void ACSoapThread(const std::string& host, uint16 port)
     {
         LOG_ERROR("network.soap", "ACSoap: couldn't bind to {}:{}", host, port);
         World::StopNow(ERROR_EXIT_CODE);
+        LOG_INFO("shutdown.debug", "ACSoap: ACSoapThread returning due to bind failure.");
         return;
     }
 
@@ -55,9 +57,11 @@ void ACSoapThread(const std::string& host, uint16 port)
         process_message(thread_soap);
     }
 
+    LOG_INFO("shutdown.debug", "ACSoap: World stopped, ACSoapThread exiting loop.");
     soap_destroy(&soap);
     soap_end(&soap);
     soap_done(&soap);
+    LOG_INFO("shutdown.debug", "ACSoap: ACSoapThread finished.");
 }
 
 void process_message(struct soap* soap_message)
